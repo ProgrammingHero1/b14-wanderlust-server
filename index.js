@@ -1,5 +1,6 @@
 import express from 'express'
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
+import cors from 'cors'
 import 'dotenv/config'
 const app = express() 
 const PORT = 8000
@@ -16,8 +17,47 @@ export async function connectToMongoDB() {
   }
 }
 
+app.use(cors())
+app.use(express.json())
 
-connectToMongoDB()
+
+const mongoClient = await connectToMongoDB()
+const db = mongoClient.db("wanderlust")
+const destinationCollection =  db.collection("destination")
+
+app.post("/add-destination", async(req, res) => {
+  const data = req.body
+  const result = await destinationCollection.insertOne(data)
+  res.send(result)
+})
+
+app.get('/destinations', async(req, res) => {
+  const result = await destinationCollection.find().toArray() 
+  res.send(result)
+})
+
+app.get('/destination/:id', async(req, res) => {
+  const {id} = req.params
+  const result = await destinationCollection.findOne({_id: new ObjectId(id)})
+  res.send(result)
+})
+
+app.patch('/destination/:id', async(req, res) => {
+  const {id} = req.params
+  const data = req.body
+  const result = await destinationCollection.updateOne(
+    {_id: new ObjectId(id)}, 
+    {$set: data}
+  )
+  res.json(result)
+})
+
+app.delete('/destination/:id', async(req, res) => {
+  const {id} = req.params
+  const result = await destinationCollection.deleteOne({_id: new ObjectId(id)})
+  res.json(result)
+})
+
 
 
 
